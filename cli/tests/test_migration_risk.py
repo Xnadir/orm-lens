@@ -689,6 +689,24 @@ class RunSQLTest(unittest.TestCase):
             findings = analyze_migration_risks(tmp, current_schema=_empty_schema())
             self.assertNotIn("runsql_no_reverse", _by_rule(findings))
 
+    def test_positive_explicit_none_reverse(self) -> None:
+        # Django's RunSQL.reversible is ``reverse_sql is not None``.
+        for call in (
+            "migrations.RunSQL('UPDATE orders SET x=1', None)",
+            "migrations.RunSQL('UPDATE orders SET x=1', reverse_sql=None)",
+        ):
+            with self.subTest(call=call), TemporaryDirectory() as tmp:
+                app = Path(tmp) / "orders"
+                _write(
+                    app, "0001_initial",
+                    "from django.db import migrations\n"
+                    "class Migration(migrations.Migration):\n"
+                    "    dependencies = []\n"
+                    f"    operations = [{call}]\n",
+                )
+                findings = analyze_migration_risks(tmp, current_schema=_empty_schema())
+                self.assertIn("runsql_no_reverse", _by_rule(findings))
+
 
 # ---------------------------------------------------------------------------
 # Rule 7: AddField unique=True

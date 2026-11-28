@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **migration-risk: an explicit `None` reverse counts as no reverse.**
+  `RunPython(forward, None)`, `RunPython(forward, reverse_code=None)` and
+  `RunSQL(sql, reverse_sql=None)` are irreversible in Django, the same as
+  leaving the argument out, but `runpython_no_reverse` and
+  `runsql_no_reverse` only fired when it was missing. They now fire for a
+  literal `None` too.
+
 - **nplusone: a `GenericForeignKey` gets `prefetch_related`, not
   `select_related`.** The parsers did not record
   `content_object = GenericForeignKey(...)`, so a loop over a reverse manager

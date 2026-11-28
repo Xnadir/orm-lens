@@ -111,6 +111,28 @@ class RunPythonNoReverseTest(unittest.TestCase):
             findings = analyze_migration_risks(tmp, current_schema={})
             self.assertNotIn("runpython_no_reverse", _by_rule(findings))
 
+    def test_positive_explicit_none_reverse(self) -> None:
+        # Django's RunPython.reversible is ``reverse_code is not None``, so
+        # an explicit None is as irreversible as leaving it out.
+        for call in (
+            "migrations.RunPython(forward, None)",
+            "migrations.RunPython(forward, reverse_code=None)",
+        ):
+            with self.subTest(call=call), TemporaryDirectory() as tmp:
+                app = Path(tmp) / "orders"
+                _write(app, "0001_initial", _EMPTY_INITIAL)
+                _write(
+                    app, "0002_backfill",
+                    "from django.db import migrations\n\n"
+                    "def forward(apps, schema_editor):\n"
+                    "    pass\n\n"
+                    "class Migration(migrations.Migration):\n"
+                    "    dependencies = [('orders', '0001_initial')]\n"
+                    f"    operations = [{call}]\n",
+                )
+                findings = analyze_migration_risks(tmp, current_schema={})
+                self.assertIn("runpython_no_reverse", _by_rule(findings))
+
 
 # ---------------------------------------------------------------------------
 # Rule: AlterUniqueTogether on a populated table

@@ -1792,11 +1792,23 @@ class MigrationRiskAnalyzer:
     # ------------------------------------------------------------------
     # Rule 6: RunSQL without reverse_sql
     # ------------------------------------------------------------------
+    @staticmethod
+    def _lacks_reverse(call: ast.Call, name: str) -> bool:
+        """True when ``reverse_sql`` / ``reverse_code`` is missing or ``None``.
+
+        Django treats an explicit ``None`` exactly like a missing argument:
+        ``reversible`` is ``reverse_sql is not None`` (``reverse_code`` for
+        RunPython) and the backwards step raises ``NotImplementedError``.
+        """
+        reverse_node = _get_kwarg(call, name)
+        if reverse_node is None:
+            # A starred positional, e.g. ``RunSQL(sql, *rest)``, may carry it.
+            return len(call.args) < 2
+        return isinstance(reverse_node, ast.Constant) and reverse_node.value is None
+
     def _check_RunSQL(self, call: ast.Call) -> None:
         # positional args: (sql, reverse_sql=None, ...)
-        reverse_node = _get_kwarg(call, "reverse_sql")
-        has_reverse_positional = len(call.args) >= 2
-        if reverse_node is None and not has_reverse_positional:
+        if self._lacks_reverse(call, "reverse_sql"):
             self._add(
                 call,
                 "RunSQL",
@@ -1821,9 +1833,7 @@ class MigrationRiskAnalyzer:
         # Signature: RunPython(code, reverse_code=None, ...). A data
         # migration without a reverse makes ``migrate <app> zero`` /
         # rollback deploys fail at exactly the wrong moment.
-        reverse_node = _get_kwarg(call, "reverse_code")
-        has_reverse_positional = len(call.args) >= 2
-        if reverse_node is None and not has_reverse_positional:
+        if self._lacks_reverse(call, "reverse_code"):
             self._add(
                 call,
                 "RunPython",
