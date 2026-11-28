@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Fields from common third-party packages are parsed.** A bare
+  `I18nCharField`/`I18nTextField` (django-i18nfield), `PhoneNumberField`
+  (django-phonenumber-field), `CountryField` (django-countries),
+  `VectorField`/`HalfVectorField`/`SparseVectorField` (pgvector) or
+  `SortedManyToManyField` (django-sortedm2m) was dropped from `describe`, `er`
+  and `drift`, because only names on a fixed list count as fields. They are on
+  the list now, and `SortedManyToManyField` is read as a many-to-many relation.
+  Fixes [#377](https://github.com/FROWNINGdev/orm-lens/issues/377).
+
 - **nplusone: a `GenericForeignKey` gets `prefetch_related`, not
   `select_related`.** The parsers did not record
   `content_object = GenericForeignKey(...)`, so a loop over a reverse manager

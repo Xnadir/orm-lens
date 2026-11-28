@@ -55,6 +55,8 @@ TREE_FIELD_ALIASES: dict[str, str] = {
     "TreeForeignKey": "ForeignKey",
     "TreeOneToOneField": "OneToOneField",
     "TreeManyToManyField": "ManyToManyField",
+    # django-sortedm2m: a ManyToManyField with an ordered through table.
+    "SortedManyToManyField": "ManyToManyField",
 }
 
 # ``(?:\s*\[[^\]]*\])?`` — optional PEP-695 generic type parameter list
@@ -108,6 +110,14 @@ BARE_FIELD_TYPES = "|".join(
         "TaggableManager",
         "GenericForeignKey",
         "TreeForeignKey", "TreeOneToOneField", "TreeManyToManyField",
+        # Field classes from common third-party packages (issue #377). They
+        # live in site-packages, which the scanner never reads, so the name
+        # has to be known here.
+        "I18nCharField", "I18nTextField",  # django-i18nfield
+        "SortedManyToManyField",  # django-sortedm2m
+        "PhoneNumberField",  # django-phonenumber-field
+        "CountryField",  # django-countries
+        "VectorField", "HalfVectorField", "SparseVectorField",  # pgvector
     ]
 )
 _BARE_FIELD_NAMES = frozenset(BARE_FIELD_TYPES.split("|"))

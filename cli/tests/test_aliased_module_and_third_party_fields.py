@@ -120,5 +120,57 @@ class TaggableManagerTest(unittest.TestCase):
         self.assertEqual(tags.through_model, "CustomTaggedItem")
 
 
+class ThirdPartyFieldClassesTest(unittest.TestCase):
+    """Issue #377: field classes from site-packages, imported bare."""
+
+    def test_third_party_field_classes_are_fields(self) -> None:
+        src = (
+            "from django.db import models\n"
+            "from i18nfield.fields import I18nCharField, I18nTextField\n"
+            "from phonenumber_field.modelfields import PhoneNumberField\n"
+            "from django_countries.fields import CountryField\n"
+            "from pgvector.django import HalfVectorField, SparseVectorField, VectorField\n\n"
+            "class Event(models.Model):\n"
+            "    name = I18nCharField(max_length=200)\n"
+            "    about = I18nTextField(blank=True)\n"
+            "    phone = PhoneNumberField(blank=True)\n"
+            "    country = CountryField()\n"
+            "    embedding = VectorField(dimensions=3)\n"
+            "    half = HalfVectorField(dimensions=3)\n"
+            "    sparse = SparseVectorField(dimensions=3)\n"
+        )
+        fields = parse_models_file("events/models.py", src)[0].fields
+        self.assertEqual(
+            [(f.name, f.type, f.is_relation) for f in fields],
+            [
+                ("name", "I18nCharField", False),
+                ("about", "I18nTextField", False),
+                ("phone", "PhoneNumberField", False),
+                ("country", "CountryField", False),
+                ("embedding", "VectorField", False),
+                ("half", "HalfVectorField", False),
+                ("sparse", "SparseVectorField", False),
+            ],
+        )
+
+    def test_sorted_many_to_many_is_a_many_to_many_relation(self) -> None:
+        src = (
+            "from django.db import models\n"
+            "from sortedm2m.fields import SortedManyToManyField\n\n"
+            "class Template(models.Model):\n"
+            "    name = models.CharField(max_length=200)\n\n"
+            "class Config(models.Model):\n"
+            "    templates = SortedManyToManyField(Template, blank=True, related_name='configs')\n"
+        )
+        config = parse_models_file("shop/models.py", src)[1]
+        self.assertEqual([f.name for f in config.fields], ["templates"])
+        templates = config.fields[0]
+        self.assertTrue(templates.is_relation)
+        self.assertEqual(templates.relation_kind, "ManyToManyField")
+        self.assertEqual(templates.related_model, "Template")
+        self.assertEqual(templates.related_name, "configs")
+        self.assertIsNone(templates.on_delete)
+
+
 if __name__ == "__main__":
     unittest.main()
