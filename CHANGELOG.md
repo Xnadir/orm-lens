@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **nplusone: a `GenericForeignKey` gets `prefetch_related`, not
+  `select_related`.** The parsers did not record
+  `content_object = GenericForeignKey(...)`, so a loop over a reverse manager
+  that read it was guessed to be a foreign key and the suggested
+  `.select_related("content_object")` raises `FieldError` in Django. The field
+  is now parsed (it shows in `describe` and `er`), `nplusone` suggests
+  `.prefetch_related("content_object")`, and `drift` and `migration-risk`
+  ignore it, since Django never writes it to a migration.
+
 - **A method or property shadowing an abstract field is not treated as a column.**
   Django skips copying an abstract base's field when the subclass body binds
   that name itself, including a `def name` / `@property def name` override.
