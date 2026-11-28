@@ -43,6 +43,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Signal names drop the non-package `src.` prefix in a src layout.** A
+  project that keeps its packages under `src/` (pretalx, for example) had
+  every handler and custom signal named `src.pretalx...`, which is not
+  importable and does not match the names in the code. The module path now
+  starts at the topmost directory that is a package, so
+  `src/shop/receivers.py` becomes `shop.receivers`. File locations are
+  unchanged. Fixes #378.
+
 - **Test classes named like models are not models.** A class such as
   `class Book(TestCase)` was kept as a second, empty `Book` model because
   model detection matched the class name, not its bases. `list` showed both,
