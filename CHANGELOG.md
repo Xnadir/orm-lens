@@ -43,6 +43,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Test classes named like models are not models.** A class such as
+  `class Book(TestCase)` was kept as a second, empty `Book` model because
+  model detection matched the class name, not its bases. `list` showed both,
+  and `drift` compared migrations with the empty test class, producing a
+  blocking "declared, but no migration creates it" for BookWyrm's test
+  classes. Test-case bases (`TestCase`, `TransactionTestCase`,
+  `SimpleTestCase`, `LiveServerTestCase`, DRF `APITestCase`, and project
+  `*TestCase` bases) are now treated as non-model tails. Fixes #371.
+
 - **migration-risk lowers the confidence of `AddField` findings with unpacked
   field options.** When `**options` may supply `null=True` or a default,
   `add_field_not_null_no_default` reports `warning/low` and explains which
